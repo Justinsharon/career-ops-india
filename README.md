@@ -37,7 +37,7 @@ Plus a **LinkedIn Outreach** agent that writes 2 cold DMs (proof-first and curio
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-username/career-ops-india
+git clone https://github.com/Justinsharon/career-ops-india
 cd career-ops-india
 
 # 2. Install dependencies
