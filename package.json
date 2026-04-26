@@ -1,0 +1,27 @@
+{
+  "name": "career-ops-india-v2",
+  "version": "2.0.0",
+  "description": "AI-powered job application pipeline for the Indian job market",
+  "type": "module",
+  "main": "pipeline.js",
+  "bin": {
+    "career-ops": "./pipeline.js"
+  },
+  "scripts": {
+    "start": "node pipeline.js",
+    "dev": "node --watch pipeline.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "docx": "^9.6.1",
+    "inquirer": "^9.3.7",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.8.0",
+    "ora": "^8.0.1",
+    "papaparse": "^5.5.3",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.18.0"
+  }
+}
