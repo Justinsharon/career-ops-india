@@ -21,7 +21,7 @@ Thanks for your interest in contributing. This is a focused tool — contributio
 ## Getting started
 
 ```bash
-git clone https://github.com/your-username/career-ops-india
+git clone https://github.com/Justinsharon/career-ops-india
 cd career-ops-india
 npm install
 cp .claude/settings.example.json .claude/settings.json

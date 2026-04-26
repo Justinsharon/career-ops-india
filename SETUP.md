@@ -18,7 +18,7 @@ Platform-specific instructions for getting Career-Ops India running.
 brew install node
 
 # Clone and install
-git clone https://github.com/your-username/career-ops-india
+git clone https://github.com/Justinsharon/career-ops-india
 cd career-ops-india
 npm install
 
@@ -39,7 +39,7 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Clone and install
-git clone https://github.com/your-username/career-ops-india
+git clone https://github.com/Justinsharon/career-ops-india
 cd career-ops-india
 npm install
 
@@ -60,7 +60,7 @@ node pipeline.js
 :: Install Node.js from https://nodejs.org (LTS version)
 :: Then in a new terminal:
 
-git clone https://github.com/your-username/career-ops-india
+git clone https://github.com/Justinsharon/career-ops-india
 cd career-ops-india
 npm install
 
