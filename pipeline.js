@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import Anthropic from '@anthropic-ai/sdk';
 import chalk from 'chalk';
+import { jsonrepair } from 'jsonrepair';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
@@ -44,6 +45,28 @@ function unwrapFitData(parsed) {
     }
   }
   return parsed;
+}
+
+async function parseWithRepair(raw, label, retryFn = null) {
+  const extracted = extractJSON(raw);
+  try {
+    return JSON.parse(extracted);
+  } catch {
+    console.warn(chalk.yellow(`\n  ⚠  ${label} JSON malformed, attempting repair...`));
+    try {
+      const repaired = jsonrepair(extracted);
+      const result = JSON.parse(repaired);
+      console.log(chalk.green(`  ✓  ${label} JSON auto-repaired`));
+      return result;
+    } catch {
+      if (retryFn) {
+        console.warn(chalk.yellow(`  ⚠  ${label} repair failed, retrying agent...`));
+        const retryRaw = await retryFn();
+        return JSON.parse(extractJSON(retryRaw));
+      }
+      throw new Error(`${label} JSON could not be parsed or repaired`);
+    }
+  }
 }
 
 async function runAgent(systemPrompt, userMessage, label) {
@@ -158,14 +181,14 @@ async function main() {
 
   let jdData;
   try {
-    jdData = JSON.parse(extractJSON(jdRaw));
+    jdData = await parseWithRepair(jdRaw, 'JD Cleaner');
   } catch {
     jdData = { role: 'Unknown', summary: jdRaw };
   }
 
   let fitData;
   try {
-    fitData = unwrapFitData(JSON.parse(extractJSON(fitRaw)));
+    fitData = unwrapFitData(await parseWithRepair(fitRaw, 'Fit Evaluator'));
   } catch {
     fitData = { ats_score: 0, skill_overlap: 0, experience_fit: 0, recruiter_likelihood: 0, overall: 0, verdict: fitRaw };
   }
@@ -204,7 +227,9 @@ async function main() {
       `ORIGINAL CV:\n${cvText}\n\n---\n\nATS-OPTIMIZED BULLETS:\n${resumeOutput}`,
       'resume_final'
     );
-    resumeData = JSON.parse(extractJSON(resumeJsonRaw));
+    resumeData = await parseWithRepair(resumeJsonRaw, 'Resume Final', () =>
+      runAgent(RESUME_FINAL_PROMPT, `ORIGINAL CV:\n${cvText}\n\n---\n\nATS-OPTIMIZED BULLETS:\n${resumeOutput}`, 'resume_final')
+    );
 
     if (originalDocxPath) {
       try {
@@ -247,24 +272,33 @@ async function main() {
         ATS_VALIDATOR_PROMPT,
         `REWRITTEN RESUME:\n${resumeJson}\n\n---\n\nJOB DESCRIPTION:\n${jdText}`,
         'ats_validator'
-      ).then(raw => { atsAfter = JSON.parse(extractJSON(raw)); })
-        .catch(err => stage4Errors.push(`ATS Validator: ${err.message}`))
+      ).then(async raw => {
+        atsAfter = await parseWithRepair(raw, 'ATS Validator', () =>
+          runAgent(ATS_VALIDATOR_PROMPT, `REWRITTEN RESUME:\n${resumeJson}\n\n---\n\nJOB DESCRIPTION:\n${jdText}`, 'ats_validator')
+        );
+      }).catch(err => stage4Errors.push(`ATS Validator: ${err.message}`))
     : Promise.resolve();
 
   const answersPromise = runAgent(
     ANSWER_GENERATOR_PROMPT,
     `CANDIDATE CV:\n${cvText}\n\n---\n\nCLEANED JD (JSON):\n${jdJson}\n\n---\n\nFIT EVALUATION:\n${fitJson}`,
     'answer_generator'
-  ).then(raw => { answersData = JSON.parse(extractJSON(raw)); })
-    .catch(err => stage4Errors.push(`Answer Generator: ${err.message}`));
+  ).then(async raw => {
+    answersData = await parseWithRepair(raw, 'Answer Generator', () =>
+      runAgent(ANSWER_GENERATOR_PROMPT, `CANDIDATE CV:\n${cvText}\n\n---\n\nCLEANED JD (JSON):\n${jdJson}\n\n---\n\nFIT EVALUATION:\n${fitJson}`, 'answer_generator')
+    );
+  }).catch(err => stage4Errors.push(`Answer Generator: ${err.message}`));
 
   const coverLetterPromise = resumeData
     ? runAgent(
         COVER_LETTER_PROMPT,
         `REWRITTEN RESUME (JSON):\n${resumeJson}\n\n---\n\nCLEANED JD (JSON):\n${jdJson}\n\n---\n\nFIT EVALUATION:\n${fitJson}`,
         'cover_letter'
-      ).then(raw => { clData = JSON.parse(extractJSON(raw)); })
-        .catch(err => stage4Errors.push(`Cover Letter: ${err.message}`))
+      ).then(async raw => {
+        clData = await parseWithRepair(raw, 'Cover Letter', () =>
+          runAgent(COVER_LETTER_PROMPT, `REWRITTEN RESUME (JSON):\n${resumeJson}\n\n---\n\nCLEANED JD (JSON):\n${jdJson}\n\n---\n\nFIT EVALUATION:\n${fitJson}`, 'cover_letter')
+        );
+      }).catch(err => stage4Errors.push(`Cover Letter: ${err.message}`))
     : Promise.resolve();
 
   await Promise.all([atsPromise, answersPromise, coverLetterPromise]);

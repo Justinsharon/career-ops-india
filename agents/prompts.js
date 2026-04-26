@@ -159,6 +159,7 @@ Rules:
 - "contact": combine available fields as "phone | email | linkedin | city"
 - "notice_period": extract from CV if present, otherwise null
 - "cgpa": include if present in the CV, otherwise null
+- CRITICAL: Inside any string value, escape all double quotes with backslash (\"). Do not use unescaped quotes inside bullet point text. Do not include trailing commas. Arrays must have commas between every element.
 - REMEMBER: output ONLY the raw JSON — first character {, last character }, nothing else`;
 
 export const ANSWER_GENERATOR_PROMPT = `You are an expert Indian career coach who prepares candidates for interviews at Indian companies — startups, MNCs, and FAANG India offices.
